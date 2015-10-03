@@ -48,7 +48,7 @@
 #include "MoveTask.h"
 #include "TrimTask.h"
 
-#define DUMP_ARGS 0
+#define DUMP_ARGS 1
 
 CommandListener::CommandListener() :
                  FrameworkListener("vold", true) {
