@@ -84,7 +84,7 @@ Disk::Disk(const std::string& eventPath, dev_t device,
         const std::string& nickname, int flags) :
         mDevice(device), mSize(-1), mNickname(nickname), mFlags(flags), mCreated(
                 false), mJustPartitioned(false) {
-    mId = StringPrintf("disk:%u,%u", major(device), minor(device));
+    mId = StringPrintf("disk:%u_%u", major(device), minor(device));
     mEventPath = eventPath;
     mSysPath = StringPrintf("/sys/%s", eventPath.c_str());
     mDevPath = StringPrintf("/dev/block/vold/%s", mId.c_str());
@@ -348,9 +348,23 @@ status_t Disk::unmountAll() {
 }
 
 status_t Disk::partitionPublic() {
+    int res;
+
     // TODO: improve this code
     destroyAllVolumes();
     mJustPartitioned = true;
+
+    // First nuke any existing partition table
+    std::vector<std::string> cmd;
+    cmd.push_back(kSgdiskPath);
+    cmd.push_back("--zap-all");
+    cmd.push_back(mDevPath);
+
+    // Zap sometimes returns an error when it actually succeeded, so
+    // just log as warning and keep rolling forward.
+    if ((res = ForkExecvp(cmd)) != 0) {
+        LOG(WARNING) << "Failed to zap; status " << res;
+    }
 
     struct disk_info dinfo;
     memset(&dinfo, 0, sizeof(dinfo));
